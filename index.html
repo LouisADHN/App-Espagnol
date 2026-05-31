@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Barcelona · Castellà & Català 🇪🇸</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Mulish:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+  nav::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+// ── DATA ───────────────────────────────────────────────────────────
+// es = castillan (compris partout), ca = catalan (langue locale de Barcelone)
+const CATEGORIES = [
+  {
+    id: "saludos", title: "Salutacions", sub: "Saluer & politesse", icon: "👋",
+    phrases: [
+      { es: "Hola", ca: "Hola", fr: "Bonjour / Salut", pron: "o-la" },
+      { es: "Buenos días", ca: "Bon dia", fr: "Bonjour (matin)", pron: "bon di-a (cat.)" },
+      { es: "Buenas tardes", ca: "Bona tarda", fr: "Bon après-midi", pron: "bo-na tar-da (cat.)" },
+      { es: "Buenas noches", ca: "Bona nit", fr: "Bonsoir / Bonne nuit", pron: "bo-na nit (cat.)" },
+      { es: "¿Cómo estás?", ca: "Com estàs?", fr: "Comment ça va ?", pron: "com es-tas (cat.)" },
+      { es: "Muy bien, gracias", ca: "Molt bé, gràcies", fr: "Très bien, merci", pron: "mol bé, gra-ssies (cat.)" },
+      { es: "Por favor", ca: "Si us plau", fr: "S'il vous plaît", pron: "si ous plaou (cat.)" },
+      { es: "Gracias", ca: "Gràcies", fr: "Merci", pron: "gra-ssies (cat.)" },
+      { es: "De nada", ca: "De res", fr: "De rien", pron: "dé rés (cat.)" },
+      { es: "Adiós", ca: "Adéu", fr: "Au revoir", pron: "a-déou (cat.)" },
+      { es: "Lo siento", ca: "Ho sento", fr: "Désolé(e)", pron: "ou sen-tou (cat.)" },
+      { es: "Disculpe", ca: "Perdoni", fr: "Excusez-moi", pron: "per-do-ni (cat.)" },
+    ],
+  },
+  {
+    id: "restaurante", title: "Restaurant", sub: "Manger & boire", icon: "🍽️",
+    phrases: [
+      { es: "Una mesa para dos", ca: "Una taula per a dos", fr: "Une table pour deux", pron: "ou-na taou-la per a dos (cat.)" },
+      { es: "La carta, por favor", ca: "La carta, si us plau", fr: "Le menu, s'il vous plaît", pron: "la car-ta (cat.)" },
+      { es: "Quiero...", ca: "Voldria...", fr: "Je voudrais...", pron: "vol-dri-a (cat.)" },
+      { es: "Una cerveza", ca: "Una cervesa", fr: "Une bière", pron: "ou-na ser-vé-za (cat.)" },
+      { es: "Una caña", ca: "Una canya", fr: "Un demi (bière pression)", pron: "ou-na ca-gna" },
+      { es: "Agua, por favor", ca: "Aigua, si us plau", fr: "De l'eau, s'il vous plaît", pron: "aï-goua (cat.)" },
+      { es: "Un café con leche", ca: "Un cafè amb llet", fr: "Un café au lait", pron: "oun ca-fè am yet (cat.)" },
+      { es: "La cuenta, por favor", ca: "El compte, si us plau", fr: "L'addition, s'il vous plaît", pron: "el comp-té (cat.)" },
+      { es: "Pan con tomate", ca: "Pa amb tomàquet", fr: "Pain à la tomate (spécialité !)", pron: "pa am tou-ma-quét (cat.)" },
+      { es: "Está delicioso", ca: "Està boníssim", fr: "C'est délicieux", pron: "es-ta bou-ni-ssim (cat.)" },
+      { es: "Soy vegetariano/a", ca: "Sóc vegetarià/ana", fr: "Je suis végétarien(ne)", pron: "soc vé-jé-ta-ri-a (cat.)" },
+      { es: "Sin gluten", ca: "Sense gluten", fr: "Sans gluten", pron: "sen-zé glou-ten (cat.)" },
+    ],
+  },
+  {
+    id: "direcciones", title: "Direccions", sub: "S'orienter", icon: "🧭",
+    phrases: [
+      { es: "¿Dónde está...?", ca: "On és...?", fr: "Où est... ?", pron: "on és (cat.)" },
+      { es: "¿Dónde está el baño?", ca: "On és el lavabo?", fr: "Où sont les toilettes ?", pron: "on és el la-va-bou (cat.)" },
+      { es: "A la derecha", ca: "A la dreta", fr: "À droite", pron: "a la dré-ta (cat.)" },
+      { es: "A la izquierda", ca: "A l'esquerra", fr: "À gauche", pron: "a les-kè-rra (cat.)" },
+      { es: "Todo recto", ca: "Tot recte", fr: "Tout droit", pron: "tot rec-té (cat.)" },
+      { es: "Cerca / Lejos", ca: "A prop / Lluny", fr: "Près / Loin", pron: "a prop / youny (cat.)" },
+      { es: "La playa", ca: "La platja", fr: "La plage (Barceloneta !)", pron: "la pla-dja (cat.)" },
+      { es: "La estación", ca: "L'estació", fr: "La gare / station", pron: "les-ta-ssi-o (cat.)" },
+      { es: "El metro", ca: "El metro", fr: "Le métro", pron: "el mé-tro" },
+      { es: "¿Cómo llego a...?", ca: "Com arribo a...?", fr: "Comment aller à... ?", pron: "com a-rri-bou a (cat.)" },
+      { es: "Estoy perdido/a", ca: "Estic perdut/uda", fr: "Je suis perdu(e)", pron: "es-tic per-dout (cat.)" },
+      { es: "La Sagrada Familia", ca: "La Sagrada Família", fr: "La Sagrada Família", pron: "sa-gra-da fa-mi-li-a" },
+    ],
+  },
+  {
+    id: "compras", title: "Compres", sub: "Acheter & payer", icon: "🛍️",
+    phrases: [
+      { es: "¿Cuánto cuesta?", ca: "Quant val?", fr: "Combien ça coûte ?", pron: "couan val (cat.)" },
+      { es: "Es muy caro", ca: "És molt car", fr: "C'est très cher", pron: "és mol car (cat.)" },
+      { es: "¿Tiene...?", ca: "Que té...?", fr: "Avez-vous... ?", pron: "ké té (cat.)" },
+      { es: "Solo estoy mirando", ca: "Només estic mirant", fr: "Je regarde juste", pron: "nou-més es-tic mi-ran (cat.)" },
+      { es: "¿Puedo pagar con tarjeta?", ca: "Puc pagar amb targeta?", fr: "Je peux payer par carte ?", pron: "puc pa-gar am tar-jé-ta (cat.)" },
+      { es: "En efectivo", ca: "En efectiu", fr: "En espèces", pron: "en é-fec-tiou (cat.)" },
+      { es: "Me lo llevo", ca: "M'ho enduc", fr: "Je le prends", pron: "mou en-douc (cat.)" },
+      { es: "Una bolsa, por favor", ca: "Una bossa, si us plau", fr: "Un sac, s'il vous plaît", pron: "ou-na bo-ssa (cat.)" },
+      { es: "El mercado", ca: "El mercat", fr: "Le marché (La Boqueria !)", pron: "el mer-cat (cat.)" },
+      { es: "Demasiado", ca: "Massa", fr: "Trop", pron: "ma-ssa (cat.)" },
+    ],
+  },
+  {
+    id: "emergencias", title: "Emergències", sub: "Urgences & santé", icon: "🆘",
+    phrases: [
+      { es: "¡Ayuda!", ca: "Ajuda!", fr: "À l'aide !", pron: "a-jou-da (cat.)" },
+      { es: "Necesito un médico", ca: "Necessito un metge", fr: "J'ai besoin d'un médecin", pron: "né-sé-si-tou oun mé-djé (cat.)" },
+      { es: "Llame a la policía", ca: "Truqui a la policia", fr: "Appelez la police", pron: "trou-ki a la pou-li-si-a (cat.)" },
+      { es: "Estoy enfermo/a", ca: "Estic malalt/a", fr: "Je suis malade", pron: "es-tic ma-lal (cat.)" },
+      { es: "Me duele aquí", ca: "Em fa mal aquí", fr: "J'ai mal ici", pron: "em fa mal a-ki (cat.)" },
+      { es: "La farmacia", ca: "La farmàcia", fr: "La pharmacie", pron: "la far-ma-si-a (cat.)" },
+      { es: "El hospital", ca: "L'hospital", fr: "L'hôpital", pron: "los-pi-tal (cat.)" },
+      { es: "He perdido mi pasaporte", ca: "He perdut el passaport", fr: "J'ai perdu mon passeport", pron: "é per-dout el pa-ssa-port (cat.)" },
+      { es: "¡Cuidado!", ca: "Compte!", fr: "Attention !", pron: "comp-té (cat.)" },
+      { es: "Soy alérgico/a a...", ca: "Sóc al·lèrgic/a a...", fr: "Je suis allergique à...", pron: "soc a-ler-jic (cat.)" },
+    ],
+  },
+  {
+    id: "esenciales", title: "Essencials", sub: "Mots clés & nombres", icon: "✨",
+    phrases: [
+      { es: "Sí / No", ca: "Sí / No", fr: "Oui / Non", pron: "si / no" },
+      { es: "No entiendo", ca: "No ho entenc", fr: "Je ne comprends pas", pron: "no ou en-teng (cat.)" },
+      { es: "¿Habla francés?", ca: "Parla francès?", fr: "Parlez-vous français ?", pron: "par-la fran-sès (cat.)" },
+      { es: "No hablo catalán", ca: "No parlo català", fr: "Je ne parle pas catalan", pron: "no par-lou ca-ta-la (cat.)" },
+      { es: "Más despacio, por favor", ca: "Més a poc a poc, si us plau", fr: "Plus lentement, s'il vous plaît", pron: "més a poc a poc (cat.)" },
+      { es: "uno · dos · tres", ca: "un · dos · tres", fr: "un · deux · trois", pron: "oun · dos · trés (cat.)" },
+      { es: "cuatro · cinco · seis", ca: "quatre · cinc · sis", fr: "quatre · cinq · six", pron: "coua-tré · sing · sis (cat.)" },
+      { es: "siete · ocho · nueve · diez", ca: "set · vuit · nou · deu", fr: "sept · huit · neuf · dix", pron: "set · vouit · nou · déou (cat.)" },
+      { es: "Hoy / Mañana", ca: "Avui / Demà", fr: "Aujourd'hui / Demain", pron: "a-voui / dé-ma (cat.)" },
+      { es: "¿Qué hora es?", ca: "Quina hora és?", fr: "Quelle heure est-il ?", pron: "ki-na o-ra és (cat.)" },
+    ],
+  },
+];
+
+function speak(text, lang) {
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang || "es-ES"; u.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function iconBtn(learned) {
+  return {
+    background: learned ? "rgba(255,255,255,.2)" : "#fff",
+    border: learned ? "1px solid rgba(255,255,255,.4)" : "1px solid #f0d9b5",
+    borderRadius: 10, width: 32, height: 32, cursor: "pointer",
+    fontSize: 14, lineHeight: 1, display: "flex",
+    alignItems: "center", justifyContent: "center",
+    color: learned ? "#fff" : "#c8772a", flexShrink: 0,
+  };
+}
+
+const primaryBtn = {
+  background: "linear-gradient(135deg,#e8843b,#d6452f)",
+  color: "#fff", border: "none", borderRadius: 14,
+  padding: "13px 26px", fontSize: 15, fontWeight: 700,
+  cursor: "pointer", boxShadow: "0 6px 16px rgba(214,69,47,.3)",
+};
+const modalWrap = {
+  background: "#fffdf9", borderRadius: 22, padding: 28,
+  maxWidth: 540, width: "100%", margin: "0 auto",
+  boxShadow: "0 20px 60px rgba(120,50,10,.18)", border: "1px solid #f0d9b5",
+};
+
+// ── FLASHCARD (inchangée, + petit ajout catalan) ───────────────────
+function Flashcard({ phrase, learned, onToggle }) {
+  const [flip, setFlip] = useState(false);
+  return (
+    <div
+      onClick={() => setFlip((f) => !f)}
+      style={{
+        position: "relative", cursor: "pointer", borderRadius: 18,
+        padding: "22px 20px", minHeight: 120,
+        background: learned
+          ? "linear-gradient(135deg,#1f6e4a,#2f9c68)"
+          : "linear-gradient(135deg,#fff8ef,#ffeed6)",
+        border: learned ? "2px solid #34c785" : "2px solid #f0d9b5",
+        boxShadow: "0 6px 0 rgba(0,0,0,.06), 0 14px 30px rgba(180,90,20,.10)",
+        transition: "transform .15s ease, background .3s",
+        display: "flex", flexDirection: "column", justifyContent: "center",
+      }}
+      onMouseDown={(e) => (e.currentTarget.style.transform = "translateY(2px)")}
+      onMouseUp={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <span style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, color: learned ? "#cdfbe2" : "#c8772a" }}>
+          {flip ? "Français" : "Castellà / Català"}
+        </span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={(e) => { e.stopPropagation(); speak(phrase.es, "es-ES"); }} title="Écouter (castillan)" style={iconBtn(learned)}>🔊</button>
+          <button onClick={(e) => { e.stopPropagation(); onToggle(); }} title="Marquer comme appris" style={iconBtn(learned)}>{learned ? "✓" : "○"}</button>
+        </div>
+      </div>
+      <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 24, fontWeight: 600, lineHeight: 1.15, marginTop: 10, color: learned ? "#fff" : "#2a1e12" }}>
+        {flip ? phrase.fr : phrase.es}
+      </div>
+      {!flip && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: learned ? "#ffe8b0" : "#c8431f", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 10, background: learned ? "rgba(255,255,255,.2)" : "rgba(200,67,31,.12)", borderRadius: 6, padding: "1px 5px" }}>CAT</span>
+            {phrase.ca}
+          </div>
+          <div style={{ fontSize: 12, marginTop: 4, fontStyle: "italic", color: learned ? "#d7fcea" : "#a98e6b" }}>
+            [{phrase.pron}]
+          </div>
+        </div>
+      )}
+      <div style={{ fontSize: 10, marginTop: 10, opacity: .55, color: learned ? "#eafff5" : "#b08a5e" }}>
+        👆 cliquer pour retourner
+      </div>
+    </div>
+  );
+}
+
+// ── QUIZ (existant) ────────────────────────────────────────────────
+function Quiz({ phrases, onClose }) {
+  const pool = phrases;
+  const makeQ = (pl) => {
+    const correct = pl[Math.floor(Math.random() * pl.length)];
+    const opts = [correct];
+    while (opts.length < Math.min(4, pl.length)) {
+      const c = pl[Math.floor(Math.random() * pl.length)];
+      if (!opts.includes(c)) opts.push(c);
+    }
+    return { correct, opts: opts.sort(() => Math.random() - 0.5) };
+  };
+  const [q, setQ] = useState(() => makeQ(pool));
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const [round, setRound] = useState(1);
+  const TOTAL = Math.min(8, pool.length);
+
+  const pick = (opt) => {
+    if (picked) return;
+    setPicked(opt);
+    if (opt.es === q.correct.es) setScore((s) => s + 1);
+  };
+  const next = () => {
+    if (round >= TOTAL) { setRound(round + 1); return; }
+    setRound((r) => r + 1); setPicked(null); setQ(makeQ(pool));
+  };
+
+  if (round > TOTAL) {
+    const pct = Math.round((score / TOTAL) * 100);
+    return (
+      <div style={modalWrap}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 54 }}>{pct >= 75 ? "🎉" : pct >= 50 ? "👏" : "💪"}</div>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 30, margin: "10px 0", color: "#2a1e12" }}>{score} / {TOTAL}</h2>
+          <p style={{ color: "#a98e6b", marginBottom: 24 }}>
+            {pct >= 75 ? "Excel·lent! Tu es prêt(e) pour Barcelone." : pct >= 50 ? "Molt bé ! Continue à réviser." : "Recommence pour mémoriser !"}
+          </p>
+          <button onClick={onClose} style={primaryBtn}>Terminer</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={modalWrap}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#c8772a" }}>Question {round} / {TOTAL}</span>
+        <button onClick={onClose} style={{ ...iconBtn(false), width: 34, height: 34 }}>✕</button>
+      </div>
+      <div style={{ height: 6, background: "#f0d9b5", borderRadius: 99, marginBottom: 22, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${(round / TOTAL) * 100}%`, background: "linear-gradient(90deg,#e8843b,#d6452f)", transition: "width .3s" }} />
+      </div>
+      <p style={{ fontSize: 13, color: "#a98e6b", marginBottom: 6 }}>Que veut dire :</p>
+      <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 30, margin: "0 0 6px", color: "#2a1e12", display: "flex", alignItems: "center", gap: 10 }}>
+        {q.correct.es}
+        <button onClick={() => speak(q.correct.es, "es-ES")} style={iconBtn(false)}>🔊</button>
+      </h2>
+      <div style={{ display: "grid", gap: 10, marginTop: 20 }}>
+        {q.opts.map((o) => {
+          const isCorrect = picked && o.es === q.correct.es;
+          const isWrong = picked && o === picked && o.es !== q.correct.es;
+          return (
+            <button key={o.es} onClick={() => pick(o)} style={{
+              textAlign: "left", padding: "14px 16px", borderRadius: 14, fontSize: 16, fontWeight: 600,
+              cursor: picked ? "default" : "pointer",
+              background: isCorrect ? "#2f9c68" : isWrong ? "#d6452f" : "#fff8ef",
+              color: isCorrect || isWrong ? "#fff" : "#2a1e12",
+              border: `2px solid ${isCorrect ? "#2f9c68" : isWrong ? "#d6452f" : "#f0d9b5"}`,
+              transition: "all .15s",
+            }}>{o.fr}</button>
+          );
+        })}
+      </div>
+      {picked && (
+        <button onClick={next} style={{ ...primaryBtn, marginTop: 20, width: "100%" }}>
+          {round >= TOTAL ? "Voir le résultat" : "Suivant →"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── NOUVEAU : JEU DE PAIRES (Memory / association) ─────────────────
+function MatchGame({ phrases, onClose }) {
+  // on prend jusqu'à 6 phrases, on crée 2 cartes par phrase (es + fr)
+  const pickPhrases = () => {
+    const shuffled = [...phrases].sort(() => Math.random() - 0.5).slice(0, 6);
+    const cards = [];
+    shuffled.forEach((p, i) => {
+      cards.push({ id: "es" + i, pairId: i, text: p.es, lang: "es" });
+      cards.push({ id: "fr" + i, pairId: i, text: p.fr, lang: "fr" });
+    });
+    return cards.sort(() => Math.random() - 0.5);
+  };
+
+  const [cards, setCards] = useState(pickPhrases);
+  const [selected, setSelected] = useState([]); // ids sélectionnés (max 2)
+  const [matched, setMatched] = useState([]); // pairIds trouvés
+  const [wrong, setWrong] = useState([]); // ids en erreur (flash rouge)
+  const [moves, setMoves] = useState(0);
+  const [start] = useState(Date.now());
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (matched.length === 6) return;
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 500);
+    return () => clearInterval(t);
+  }, [matched, start]);
+
+  const handlePick = (card) => {
+    if (selected.length === 2 || selected.includes(card.id) || matched.includes(card.pairId)) return;
+    if (card.lang === "es") speak(card.text, "es-ES");
+    const next = [...selected, card.id];
+    setSelected(next);
+    if (next.length === 2) {
+      setMoves((m) => m + 1);
+      const [a, b] = next.map((id) => cards.find((c) => c.id === id));
+      if (a.pairId === b.pairId) {
+        setTimeout(() => { setMatched((m) => [...m, a.pairId]); setSelected([]); }, 450);
+      } else {
+        setWrong(next);
+        setTimeout(() => { setWrong([]); setSelected([]); }, 800);
+      }
+    }
+  };
+
+  const restart = () => {
+    setCards(pickPhrases()); setSelected([]); setMatched([]); setWrong([]); setMoves(0); setElapsed(0);
+  };
+
+  const done = matched.length === 6;
+
+  return (
+    <div style={modalWrap}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 22, color: "#7a2410", margin: 0 }}>🧩 Jeu des paires</h2>
+          <p style={{ fontSize: 12, color: "#a98e6b", margin: "2px 0 0" }}>Associe l'espagnol au français</p>
+        </div>
+        <button onClick={onClose} style={{ ...iconBtn(false), width: 34, height: 34 }}>✕</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 14, marginBottom: 16, fontSize: 13, fontWeight: 700, color: "#c8772a" }}>
+        <span>⏱️ {elapsed}s</span>
+        <span>🔄 {moves} essais</span>
+        <span>✅ {matched.length}/6</span>
+      </div>
+
+      {done ? (
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <div style={{ fontSize: 54 }}>🎉</div>
+          <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, color: "#2a1e12", margin: "8px 0" }}>Bravo !</h2>
+          <p style={{ color: "#a98e6b", marginBottom: 20 }}>Toutes les paires trouvées en {elapsed}s et {moves} essais.</p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button onClick={restart} style={primaryBtn}>↻ Rejouer</button>
+            <button onClick={onClose} style={{ ...primaryBtn, background: "rgba(122,36,16,.1)", color: "#7a2410", boxShadow: "none" }}>Terminer</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 9 }}>
+          {cards.map((card) => {
+            const isMatched = matched.includes(card.pairId);
+            const isSel = selected.includes(card.id);
+            const isWrong = wrong.includes(card.id);
+            return (
+              <button key={card.id} onClick={() => handlePick(card)} disabled={isMatched} style={{
+                minHeight: 78, padding: "8px 6px", borderRadius: 13, cursor: isMatched ? "default" : "pointer",
+                fontSize: card.text.length > 16 ? 11 : 13, fontWeight: 700, lineHeight: 1.2,
+                fontFamily: card.lang === "es" ? "'Fraunces',serif" : "'Mulish',sans-serif",
+                background: isMatched ? "rgba(47,156,104,.15)" : isWrong ? "#d6452f" : isSel ? "linear-gradient(135deg,#e8843b,#d6452f)" : "#fff8ef",
+                color: isMatched ? "#2f9c68" : isWrong || isSel ? "#fff" : "#2a1e12",
+                border: `2px solid ${isMatched ? "#2f9c68" : isWrong ? "#d6452f" : isSel ? "#d6452f" : "#f0d9b5"}`,
+                opacity: isMatched ? .6 : 1, transition: "all .2s", textAlign: "center",
+              }}>
+                {card.lang === "es" && !isMatched && <span style={{ fontSize: 8, display: "block", opacity: .6, marginBottom: 2 }}>ES</span>}
+                {isMatched ? "✓" : card.text}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {!done && (
+        <p style={{ fontSize: 11, color: "#b08a5e", textAlign: "center", marginTop: 14 }}>
+          💡 Touche une carte espagnole pour l'entendre prononcée
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div style={{ background: "rgba(255,255,255,.65)", borderRadius: 14, padding: "10px 18px", minWidth: 90, textAlign: "center", border: "1px solid rgba(122,36,16,.1)" }}>
+      <div style={{ fontFamily: "'Fraunces',serif", fontSize: 24, fontWeight: 700, color: "#d6452f" }}>{value}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#9a4a26", textTransform: "uppercase", letterSpacing: .5 }}>{label}</div>
+    </div>
+  );
+}
+
+function App() {
+  const [active, setActive] = useState(CATEGORIES[0].id);
+  const [learned, setLearned] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("bcnLearned") || "{}"); } catch (e) { return {}; }
+  });
+  const [quiz, setQuiz] = useState(false);
+  const [match, setMatch] = useState(false);
+
+  const saveLearned = (next) => {
+    setLearned(next);
+    try { localStorage.setItem("bcnLearned", JSON.stringify(next)); } catch (e) {}
+  };
+  const toggle = (key) => saveLearned({ ...learned, [key]: !learned[key] });
+
+  const cat = CATEGORIES.find((c) => c.id === active);
+  const allPhrases = CATEGORIES.flatMap((c) => c.phrases);
+  const totalLearned = Object.values(learned).filter(Boolean).length;
+  const totalPhrases = allPhrases.length;
+  const progress = Math.round((totalLearned / totalPhrases) * 100);
+
+  const today = new Date();
+  const trip = new Date(today.getFullYear(), 5, 25);
+  if (trip < today) trip.setFullYear(trip.getFullYear() + 1);
+  const days = Math.ceil((trip - today) / 86400000);
+
+  return (
+    <div style={{ minHeight: "100vh", width: "100%", background: "radial-gradient(circle at 20% 0%, #ffe9c7 0%, #ffd9a0 40%, #f4b15c 100%)", fontFamily: "'Mulish', system-ui, sans-serif", padding: "0 0 60px" }}>
+      <header style={{ textAlign: "center", padding: "44px 20px 28px" }}>
+        <div style={{ fontSize: 13, letterSpacing: 3, textTransform: "uppercase", fontWeight: 800, color: "#c8431f" }}>
+          Cap sur Barcelone 🇪🇸
+        </div>
+        <h1 style={{ fontFamily: "'Fraunces',serif", fontWeight: 700, fontSize: "clamp(30px,7vw,52px)", margin: "8px 0 4px", color: "#7a2410", lineHeight: 1 }}>
+          Castellà &amp; Català
+        </h1>
+        <p style={{ color: "#9a4a26", fontWeight: 600, maxWidth: 440, margin: "8px auto 0" }}>
+          L'espagnol est compris partout à Barcelone, et le catalan est la langue locale. Voici les deux pour ta semaine de vacances.
+        </p>
+        <div style={{ display: "inline-flex", gap: 14, marginTop: 22, flexWrap: "wrap", justifyContent: "center" }}>
+          <Stat label="jours avant le départ" value={`J-${days}`} />
+          <Stat label="phrases apprises" value={`${totalLearned}/${totalPhrases}`} />
+          <Stat label="progression" value={`${progress}%`} />
+        </div>
+        <div style={{ maxWidth: 480, margin: "20px auto 0", height: 10, background: "rgba(122,36,16,.12)", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${progress}%`, background: "linear-gradient(90deg,#e8843b,#d6452f)", borderRadius: 99, transition: "width .4s" }} />
+        </div>
+      </header>
+
+      <nav style={{ display: "flex", gap: 10, overflowX: "auto", padding: "8px 18px 18px", maxWidth: 900, margin: "0 auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+        {CATEGORIES.map((c, i) => {
+          const on = c.id === active;
+          const done = c.phrases.filter((p) => learned[p.es]).length;
+          return (
+            <button key={c.id} onClick={() => setActive(c.id)} style={{
+              flex: "0 0 auto", padding: "10px 16px", borderRadius: 14,
+              marginRight: i === CATEGORIES.length - 1 ? 18 : 0,
+              border: on ? "2px solid #d6452f" : "2px solid transparent",
+              background: on ? "#fff" : "rgba(255,255,255,.55)",
+              cursor: "pointer", fontWeight: 700, fontSize: 14, color: "#7a2410",
+              boxShadow: on ? "0 6px 16px rgba(214,69,47,.2)" : "none",
+              display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap",
+            }}>
+              <span style={{ fontSize: 18 }}>{c.icon}</span>
+              <span>{c.title}</span>
+              <span style={{ fontSize: 11, background: "rgba(122,36,16,.1)", borderRadius: 8, padding: "2px 6px" }}>{done}/{c.phrases.length}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <main style={{ maxWidth: 900, margin: "0 auto", padding: "0 18px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "8px 4px 18px", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h2 style={{ fontFamily: "'Fraunces',serif", fontSize: 26, color: "#7a2410", margin: 0 }}>{cat.icon} {cat.title}</h2>
+            <p style={{ color: "#9a4a26", margin: "2px 0 0", fontWeight: 600 }}>{cat.sub}</p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button onClick={() => setMatch(true)} style={{ ...primaryBtn, background: "linear-gradient(135deg,#3a8ee6,#2456c8)", boxShadow: "0 6px 16px rgba(36,86,200,.3)" }}>🧩 Jeu des paires</button>
+            <button onClick={() => setQuiz(true)} style={primaryBtn}>🎯 Quiz</button>
+          </div>
+        </div>
+        <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+          {cat.phrases.map((p) => (
+            <Flashcard key={p.es} phrase={p} learned={!!learned[p.es]} onToggle={() => toggle(p.es)} />
+          ))}
+        </div>
+        <div style={{ marginTop: 28, padding: "18px 22px", borderRadius: 18, background: "rgba(255,255,255,.6)", border: "1px solid rgba(122,36,16,.12)", color: "#7a2410", fontWeight: 600 }}>
+          💡 <strong>À Barcelone :</strong> commencer par un mot de catalan (« Bon dia », « Gràcies ») est très apprécié des locaux. Mais pas de stress : l'espagnol castillan est compris et parlé par tout le monde. Côté prononciation catalane, le « x » se dit souvent « ch », et le « ig » final comme « tch ».
+        </div>
+      </main>
+
+      {quiz && (
+        <div onClick={(e) => e.target === e.currentTarget && setQuiz(false)} style={{ position: "fixed", inset: 0, background: "rgba(60,20,8,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18, zIndex: 50, backdropFilter: "blur(4px)" }}>
+          <Quiz phrases={cat.phrases} onClose={() => setQuiz(false)} />
+        </div>
+      )}
+      {match && (
+        <div onClick={(e) => e.target === e.currentTarget && setMatch(false)} style={{ position: "fixed", inset: 0, background: "rgba(60,20,8,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 18, zIndex: 50, backdropFilter: "blur(4px)" }}>
+          <MatchGame phrases={cat.phrases} onClose={() => setMatch(false)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
